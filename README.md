@@ -1,0 +1,37 @@
+# dotfiles
+
+My personal **zsh + Oh My Zsh + Powerlevel10k** configuration, packaged as a
+one-command installer for fresh Ubuntu machines.
+
+## What gets installed
+
+| Component | Details |
+|---|---|
+| **zsh** | via `apt` |
+| **Oh My Zsh** | latest from official installer |
+| **Powerlevel10k** | theme with saved config (`.p10k.zsh`) |
+| **zsh-autosuggestions** | fish-like suggestions |
+| **zsh-syntax-highlighting** | syntax colouring as you type |
+| **MesloLGS NF** | Nerd Font required by Powerlevel10k |
+
+## Quick install
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/seanpham99/dotfiles/main/install.sh)
+```
+
+> **Ubuntu only.** Do **not** run as root.
+
+## Post-install steps
+
+1. Set your terminal font to **MesloLGS NF**
+2. Log out / log back in (or run `exec zsh`)
+3. If the prompt looks off, run `p10k configure`
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `install.sh` | One-shot installer script |
+| `.zshrc` | Main zsh config |
+| `.p10k.zsh` | Powerlevel10k prompt config |

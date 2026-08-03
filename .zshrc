@@ -45,13 +45,38 @@ bindkey -M isearch " " magic-space    # normal space during searches
 . ~/.zsh_aliases
 #}}}
 
-SPACESHIP_PROMPT_ADD_NEWLINE="true"
-SPACESHIP_CHAR_SYMBOL="⚡"
-
-# Turn off power status when using spaceship prompt
-export SPACESHIP_BATTERY_SHOW=false
-
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 
+# Added by Antigravity CLI installer
+export PATH="/home/sonpham/.local/bin:$PATH"
+
+# >>> tokless path >>>
+# Adds tokless tool bin dirs to PATH (rtk, bun, cargo).
+for d in "/.local/bin" "/.bun/bin" "/.cargo/bin"; do
+  [ -d "" ] && case "::" in *"::"*) ;; *) PATH=":" ;; esac
+done
+export PATH
+# <<< tokless path <<<
+
+# >>> zeroclaw >>>
+export PATH="/home/sonpham/.cargo/bin:$PATH"
+# <<< zeroclaw <<<
+
+# >>> headroom persistent env >>>
+export HEADROOM_LOSSLESS="1"
+export HEADROOM_PORT="8787"
+export HEADROOM_HOST="127.0.0.1"
+export HEADROOM_MODE="token"
+export HEADROOM_BACKEND="anthropic"
+export HEADROOM_TELEMETRY="off"
+export ANTHROPIC_BASE_URL="http://127.0.0.1:8787"
+export ENABLE_TOOL_SEARCH="true"
+export OPENAI_BASE_URL="http://127.0.0.1:8787/v1"
+export COPILOT_PROVIDER_TYPE="anthropic"
+export COPILOT_PROVIDER_BASE_URL="http://127.0.0.1:8787"
+# <<< headroom persistent env <<<
+
+# opencode
+export PATH=/home/sonpham/.opencode/bin:$PATH

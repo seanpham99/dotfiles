@@ -135,6 +135,16 @@ else
   ok "zsh is already the default shell."
 fi
 
+# ── 10. Install global secret-scan git hook ──────────────────────────────────
+log "Installing global secret-scan git hook (Tier 1 path guard for every repo)..."
+if curl -fsSL "${REPO_RAW}/scripts/install-git-hooks.sh" -o "$HOME/.hermes/git-hooks-install.sh" 2>/dev/null; then
+  bash "$HOME/.hermes/git-hooks-install.sh" 2>&1 | tail -3
+  rm -f "$HOME/.hermes/git-hooks-install.sh"
+  ok "Global secret-scan hook installed (core.hooksPath)."
+else
+  warn "Could not fetch install-git-hooks.sh — skipping global hook (not fatal)."
+fi
+
 # ── Done ─────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════${RESET}"

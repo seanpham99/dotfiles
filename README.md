@@ -13,6 +13,7 @@ one-command installer for fresh Ubuntu machines.
 | **zsh-autosuggestions** | fish-like suggestions |
 | **zsh-syntax-highlighting** | syntax colouring as you type |
 | **MesloLGS NF** | Nerd Font required by Powerlevel10k |
+| **Global secret-scan git hook** | Tier 1 blocks `.env`/`config.yaml` in every repo; Tier 2 opt-in content scan (`git config secretguard.full 1`) |
 
 ## Quick install
 

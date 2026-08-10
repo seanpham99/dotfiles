@@ -31,6 +31,21 @@ echo ""
 
 REPO_RAW="https://raw.githubusercontent.com/seanpham99/dotfiles/main"
 
+# ── flags ────────────────────────────────────────────────────────────────────
+INSTALL_TOKLESS=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --with-tokless) INSTALL_TOKLESS=1 ;;
+    --help|-h)
+      echo "Usage: install.sh [--with-tokless]"
+      echo "  --with-tokless  install tokless (token-saving toolkit: rtk, codegraph)"
+      echo "  (Docker is always installed — required.)"
+      exit 0 ;;
+    *) warn "Unknown flag: $1 (ignored)" ;;
+  esac
+  shift
+done
+
 # ── 1. System packages ───────────────────────────────────────────────────────
 log "Updating apt & installing zsh, git, curl, fonts-powerline..."
 sudo apt-get update -qq
@@ -145,12 +160,29 @@ else
   warn "Could not fetch install-git-hooks.sh — skipping global hook (not fatal)."
 fi
 
-# ── 11. Install tokless (token-saving toolkit: rtk, codegraph, context-mode) ─
-log "Installing tokless (token-saving CLI for AI coding agents)..."
-if curl -fsSL "https://raw.githubusercontent.com/HoangP8/tokless/main/scripts/install.sh" | bash 2>&1 | tail -3; then
-  ok "tokless installed. Run 'tokless' to wire agents + tools."
+# ── 11. Install tokless (optional) ───────────────────────────────────────────
+if [[ "$INSTALL_TOKLESS" == "1" ]]; then
+  log "Installing tokless (token-saving CLI for AI coding agents)..."
+  if curl -fsSL "https://raw.githubusercontent.com/HoangP8/tokless/main/scripts/install.sh" | bash 2>&1 | tail -3; then
+    ok "tokless installed. Run 'tokless' to wire agents + tools."
+  else
+    warn "tokless install failed — skipping (not fatal)."
+  fi
 else
-  warn "tokless install failed — skipping (not fatal)."
+  log "Skipping tokless (use --with-tokless to install)."
+fi
+
+# ── 12. Install Docker Engine (required) ─────────────────────────────────────
+log "Installing Docker Engine + compose plugin..."
+if command -v docker >/dev/null 2>&1; then
+  ok "Docker already installed: $(docker --version)"
+else
+  if curl -fsSL https://get.docker.com | sudo bash 2>&1 | tail -3; then
+    sudo usermod -aG docker "$USER"
+    ok "Docker installed. Re-login for group permissions."
+  else
+    warn "Docker install failed — continuing (run get.docker.com manually)."
+  fi
 fi
 
 # ── Done ─────────────────────────────────────────────────────────────────────

@@ -32,16 +32,14 @@ echo ""
 REPO_RAW="https://raw.githubusercontent.com/seanpham99/dotfiles/main"
 
 # ── flags ────────────────────────────────────────────────────────────────────
-INSTALL_DOCKER=0
 INSTALL_TOKLESS=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --with-docker) INSTALL_DOCKER=1 ;;
     --with-tokless) INSTALL_TOKLESS=1 ;;
     --help|-h)
-      echo "Usage: install.sh [--with-docker] [--with-tokless]"
-      echo "  --with-docker   install Docker Engine + compose plugin"
+      echo "Usage: install.sh [--with-tokless]"
       echo "  --with-tokless  install tokless (token-saving toolkit: rtk, codegraph)"
+      echo "  (Docker is always installed — required.)"
       exit 0 ;;
     *) warn "Unknown flag: $1 (ignored)" ;;
   esac
@@ -174,21 +172,17 @@ else
   log "Skipping tokless (use --with-tokless to install)."
 fi
 
-# ── 12. Install Docker Engine (optional) ─────────────────────────────────────
-if [[ "$INSTALL_DOCKER" == "1" ]]; then
-  log "Installing Docker Engine + compose plugin..."
-  if command -v docker >/dev/null 2>&1; then
-    ok "Docker already installed: $(docker --version)"
-  else
-    if curl -fsSL https://get.docker.com | sudo bash 2>&1 | tail -3; then
-      sudo usermod -aG docker "$USER"
-      ok "Docker installed. Re-login for group permissions."
-    else
-      warn "Docker install failed — skipping (not fatal)."
-    fi
-  fi
+# ── 12. Install Docker Engine (required) ─────────────────────────────────────
+log "Installing Docker Engine + compose plugin..."
+if command -v docker >/dev/null 2>&1; then
+  ok "Docker already installed: $(docker --version)"
 else
-  log "Skipping Docker (use --with-docker to install)."
+  if curl -fsSL https://get.docker.com | sudo bash 2>&1 | tail -3; then
+    sudo usermod -aG docker "$USER"
+    ok "Docker installed. Re-login for group permissions."
+  else
+    warn "Docker install failed — continuing (run get.docker.com manually)."
+  fi
 fi
 
 # ── Done ─────────────────────────────────────────────────────────────────────

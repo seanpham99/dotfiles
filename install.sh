@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Oh My Zsh + Powerlevel10k Installer
-# Installs the exact zsh setup from seanpham99's machine on a fresh Ubuntu box.
+# Installs the exact dev setup from seanpham99's machine on a fresh Ubuntu box.
+#
+#   Mandatory (in order): Shell/OS → Core tooling (apt) → Runtimes → Docker
+#   Optional (end):       AI/dev agents (npm globals) via --with-ai-agents
 # =============================================================================
 
 set -euo pipefail
@@ -32,25 +35,29 @@ echo ""
 REPO_RAW="https://raw.githubusercontent.com/seanpham99/dotfiles/main"
 
 # ── flags ────────────────────────────────────────────────────────────────────
-INSTALL_TOKLESS=0
+INSTALL_AI_AGENTS=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --with-tokless) INSTALL_TOKLESS=1 ;;
+    --with-ai-agents) INSTALL_AI_AGENTS=1 ;;
     --help|-h)
-      echo "Usage: install.sh [--with-tokless]"
-      echo "  --with-tokless  install tokless (token-saving toolkit: rtk, codegraph)"
-      echo "  (Docker is always installed — required.)"
+      echo "Usage: install.sh [--with-ai-agents]"
+      echo "  --with-ai-agents  install AI/dev agents (npm globals: tokless, codegraph, opencode) at the end"
+      echo "  (Everything else is mandatory and always installed.)"
       exit 0 ;;
     *) warn "Unknown flag: $1 (ignored)" ;;
   esac
   shift
 done
 
-# ── 1. System packages ───────────────────────────────────────────────────────
-log "Updating apt & installing zsh, git, curl, fonts-powerline..."
+# ═══════════════════════════════════════════════════════════════════════════
+#  MANDATORY
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── 1. Core tooling (apt) ───────────────────────────────────────────────────
+log "Updating apt & installing zsh, git, curl, wget, unzip, fontconfig..."
 sudo apt-get update -qq
-sudo apt-get install -y -qq zsh git curl wget fontconfig unzip
-ok "System packages installed."
+sudo apt-get install -y -qq zsh git curl wget unzip fontconfig
+ok "Core tooling installed."
 
 # ── 2. Nerd Font (MesloLGS NF – required by Powerlevel10k) ──────────────────
 log "Installing MesloLGS Nerd Fonts (required by Powerlevel10k)..."
@@ -150,7 +157,41 @@ else
   ok "zsh is already the default shell."
 fi
 
-# ── 10. Install global secret-scan git hook ──────────────────────────────────
+# ── 10. Node.js via nvm (v24 LTS) + npm ──────────────────────────────────────
+log "Installing Node.js via nvm (LTS)..."
+export NVM_DIR="$HOME/.nvm"
+if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
+  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+fi
+# shellcheck disable=SC1091
+[[ -s "$NVM_DIR/nvm.sh" ]] && . "$NVM_DIR/nvm.sh"
+nvm install --lts >/dev/null 2>&1 || nvm install node >/dev/null 2>&1
+nvm use --lts >/dev/null 2>&1 || true
+# persist for future non-interactive shells
+grep -q 'NVM_DIR' "$HOME/.zshrc" || {
+  cat >> "$HOME/.zshrc" <<'NVMEOF'
+
+# Node.js via nvm
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+NVMEOF
+}
+ok "Node $(node --version 2>/dev/null || echo '?') + npm $(npm --version 2>/dev/null || echo '?') via nvm."
+
+# ── 11. uv/uvx (Python — PEP 668) ────────────────────────────────────────────
+log "Installing uv/uvx (Python package manager, PEP 668)..."
+if command -v uv >/dev/null 2>&1; then
+  ok "uv already installed: $(uv --version)"
+else
+  if curl -fsSL https://astral.sh/uv/install.sh | bash >/dev/null 2>&1; then
+    export PATH="$HOME/.local/bin:$PATH"
+    ok "uv installed: $(uv --version 2>/dev/null || echo '?')"
+  else
+    warn "uv install failed — continuing (run astral.sh/uv/install.sh manually)."
+  fi
+fi
+
+# ── 12. Install global secret-scan git hook ──────────────────────────────────
 log "Installing global secret-scan git hook (Tier 1 path guard for every repo)..."
 if curl -fsSL "${REPO_RAW}/scripts/install-git-hooks.sh" -o "$HOME/.hermes/git-hooks-install.sh" 2>/dev/null; then
   bash "$HOME/.hermes/git-hooks-install.sh" 2>&1 | tail -3
@@ -160,19 +201,7 @@ else
   warn "Could not fetch install-git-hooks.sh — skipping global hook (not fatal)."
 fi
 
-# ── 11. Install tokless (optional) ───────────────────────────────────────────
-if [[ "$INSTALL_TOKLESS" == "1" ]]; then
-  log "Installing tokless (token-saving CLI for AI coding agents)..."
-  if curl -fsSL "https://raw.githubusercontent.com/HoangP8/tokless/main/scripts/install.sh" | bash 2>&1 | tail -3; then
-    ok "tokless installed. Run 'tokless' to wire agents + tools."
-  else
-    warn "tokless install failed — skipping (not fatal)."
-  fi
-else
-  log "Skipping tokless (use --with-tokless to install)."
-fi
-
-# ── 12. Install Docker Engine (required) ─────────────────────────────────────
+# ── 13. Install Docker Engine + compose (required) ───────────────────────────
 log "Installing Docker Engine + compose plugin..."
 if command -v docker >/dev/null 2>&1; then
   ok "Docker already installed: $(docker --version)"
@@ -183,6 +212,44 @@ else
   else
     warn "Docker install failed — continuing (run get.docker.com manually)."
   fi
+fi
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  OPTIONAL
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── 14. AI/dev agents (npm globals) ──────────────────────────────────────────
+if [[ "$INSTALL_AI_AGENTS" == "1" ]]; then
+  log "Installing AI/dev agents (npm globals)..."
+  export NVM_DIR="$HOME/.nvm"
+  [[ -s "$NVM_DIR/nvm.sh" ]] && . "$NVM_DIR/nvm.sh"
+  command -v npm >/dev/null 2>&1 || die "npm not found — Node install failed earlier."
+
+  # tokless (token-saving toolkit: rtk, codegraph wiring)
+  log "  → tokless"
+  if curl -fsSL "https://raw.githubusercontent.com/HoangP8/tokless/main/scripts/install.sh" | bash 2>&1 | tail -2; then
+    ok "  tokless installed."
+  else
+    warn "  tokless install failed — continuing."
+  fi
+
+  # codegraph (repo indexing)
+  log "  → codegraph"
+  if npm install -g @colbymchenry/codegraph >/dev/null 2>&1; then
+    ok "  codegraph installed."
+  else
+    warn "  codegraph install failed — continuing."
+  fi
+
+  # opencode CLI
+  log "  → opencode"
+  if curl -fsSL https://opencode.ai/install | bash >/dev/null 2>&1; then
+    ok "  opencode installed."
+  else
+    warn "  opencode install failed — continuing."
+  fi
+else
+  log "Skipping AI/dev agents (use --with-ai-agents to install)."
 fi
 
 # ── Done ─────────────────────────────────────────────────────────────────────

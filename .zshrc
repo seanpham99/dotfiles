@@ -50,18 +50,18 @@ bindkey -M isearch " " magic-space    # normal space during searches
 
 
 # Added by Antigravity CLI installer
-export PATH="/home/sonpham/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 
 # >>> tokless path >>>
 # Adds tokless tool bin dirs to PATH (rtk, bun, cargo).
-for d in "/.local/bin" "/.bun/bin" "/.cargo/bin"; do
-  [ -d "" ] && case "::" in *"::"*) ;; *) PATH=":" ;; esac
+for d in "$HOME/.local/bin" "$HOME/.bun/bin" "$HOME/.cargo/bin"; do
+  [ -d "$d" ] && case ":$PATH:" in *":$d:"*) ;; *) PATH="$d:$PATH" ;; esac
 done
 export PATH
 # <<< tokless path <<<
 
 # >>> zeroclaw >>>
-export PATH="/home/sonpham/.cargo/bin:$PATH"
+export PATH="$HOME/.cargo/bin:$PATH"
 # <<< zeroclaw <<<
 
 # >>> headroom persistent env >>>
@@ -79,4 +79,4 @@ export COPILOT_PROVIDER_BASE_URL="http://127.0.0.1:8787"
 # <<< headroom persistent env <<<
 
 # opencode
-export PATH=/home/sonpham/.opencode/bin:$PATH
+export PATH="$HOME/.opencode/bin:$PATH"

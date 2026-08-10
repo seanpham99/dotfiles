@@ -46,6 +46,14 @@ if [ "$MODE" = "weekly" ]; then
   # --- full backup: curated include set (irreplaceable state only) ---
   FULL_ZIP="$BACKUP_ROOT/hermes_full_${STAMP}.zip"
   STAGE="$(mktemp -d "$BACKUP_ROOT/.stage_${STAMP}.XXXXXX")"
+  # 0. agentmemory shared store (iii-engine data dir; AGENTMEMORY_DATA_DIR if set)
+  AM_DATA="${AGENTMEMORY_DATA_DIR:-$HOME/data}"
+  if [ -d "$AM_DATA" ]; then
+    mkdir -p "$STAGE/agentmemory-store"
+    rsync -a "$AM_DATA/" "$STAGE/agentmemory-store/" 2>/dev/null \
+      && log "staged agentmemory store: $AM_DATA" \
+      || log "WARN: agentmemory store stage failed ($AM_DATA)"
+  fi
   # 1. copy include set; exclude regenerable/transient trees + ALL live DBs
   rsync -a \
     --exclude 'hermes-agent' --exclude 'state-snapshots' \
@@ -100,10 +108,10 @@ fi
 
 # --- prune local (9router daily, full weekly) ---
 if [ "$MODE" = "weekly" ]; then
-  ls -1t "$BACKUP_ROOT"/hermes_full_*.zip 2>/dev/null | tail -n +$((KEEP_FULL+1)) | xargs -r rm -f
+  ls -1t "$BACKUP_ROOT"/hermes_full_*.zip 2>/dev/null | tail -n +$((KEEP_FULL+1)) | xargs -r rm -f || true
 fi
-ls -1t "$BACKUP_ROOT"/9router_*.zip 2>/dev/null | tail -n +$((KEEP_9R+1)) | xargs -r rm -f
-ls -1t "$BACKUP_ROOT"/hermes_state_*.zip 2>/dev/null | tail -n +$((KEEP_9R+1)) | xargs -r rm -f
+ls -1t "$BACKUP_ROOT"/9router_*.zip 2>/dev/null | tail -n +$((KEEP_9R+1)) | xargs -r rm -f || true
+ls -1t "$BACKUP_ROOT"/hermes_state_*.zip 2>/dev/null | tail -n +$((KEEP_9R+1)) | xargs -r rm -f || true
 
 # --- push to encrypted R2 ---
 if command -v rclone >/dev/null 2>&1; then

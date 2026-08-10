@@ -119,6 +119,11 @@ if command -v rclone >/dev/null 2>&1; then
     --include "*.zip" --transfers 4 --log-file "$LOG_FILE" 2>&1 \
     && log "rclone push OK" \
     || log "ERROR: rclone push failed"
+  # --- remote retention (rclone copy never deletes remote; prune past bounds) ---
+  REMOTE_DIR="$RCLONE_REMOTE:$(basename "$BACKUP_ROOT")"
+  rclone delete "$REMOTE_DIR" --min-age 30d --include "hermes_state_*.zip" --include "9router_*.zip" 2>&1 | tail -1 >> "$LOG_FILE" || true
+  rclone delete "$REMOTE_DIR" --min-age 35d --include "hermes_full_*.zip" 2>&1 | tail -1 >> "$LOG_FILE" || true
+  log "remote retention pruned (state/9router >30d, full >35d)"
 else
   log "WARN: rclone not found, skipping push"
 fi

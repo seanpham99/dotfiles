@@ -67,7 +67,7 @@ if [[ "${INTERACTIVE:-1}" == "1" ]] && [[ -t 0 ]]; then
   echo -e "${BOLD}This installer will set up:${RESET}"
   echo ""
   echo -e "  ${CYAN}Mandatory:${RESET}"
-  echo "    [1] apt: zsh, git, curl, wget, unzip, fontconfig"
+  echo "    [1] apt: zsh, git, curl, wget, zip, unzip, fontconfig"
   echo "    [2] MesloLGS Nerd Fonts (required by Powerlevel10k)"
   echo "    [3] Oh My Zsh + Powerlevel10k theme + plugins"
   echo "    [4] .zshrc / .p10k.zsh / .zsh_aliases (existing .zshrc backed up)"
@@ -94,9 +94,9 @@ fi
 # ═══════════════════════════════════════════════════════════════════════════
 
 # ── 1. Core tooling (apt) ───────────────────────────────────────────────────
-log "Updating apt & installing zsh, git, curl, wget, unzip, fontconfig..."
+log "Updating apt & installing zsh, git, curl, wget, zip, unzip, fontconfig..."
 sudo apt-get update -qq
-sudo apt-get install -y -qq zsh git curl wget unzip fontconfig
+sudo apt-get install -y -qq zsh git curl wget zip unzip fontconfig
 ok "Core tooling installed."
 
 # ── 2. Nerd Font (MesloLGS NF – required by Powerlevel10k) ──────────────────

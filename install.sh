@@ -80,10 +80,16 @@ if [[ "${INTERACTIVE:-1}" == "1" ]] && [[ -t 0 ]]; then
   echo "    [B] uv/uvx (Python package manager, PEP 668)"
   echo "    [C] AI/dev agents: tokless, codegraph, opencode (npm globals)"
   echo ""
+  echo -e "  ${BOLD}Selected options:${RESET}"
+  echo "    Core (1-7) always installed"
+  echo "    Docker: ${INSTALL_DOCKER}  uv: ${INSTALL_UV}  AI agents: ${INSTALL_AI_AGENTS}"
+  echo ""
   read -rp "    Install Docker? [Y/n] " ans;    [[ "${ans,,}" == "n" ]] && INSTALL_DOCKER=0 || INSTALL_DOCKER=1
   read -rp "    Install uv/uvx? [Y/n] " ans;    [[ "${ans,,}" == "n" ]] && INSTALL_UV=0 || INSTALL_UV=1
   read -rp "    Install AI/dev agents? [y/N] " ans; [[ "${ans,,}" == "y" ]] && INSTALL_AI_AGENTS=1 || INSTALL_AI_AGENTS=0
   echo ""
+  echo -e "  ${BOLD}Will install:${RESET}"
+  echo "    Core + Docker=$INSTALL_DOCKER uv=$INSTALL_UV AI=$INSTALL_AI_AGENTS"
   read -rp "  Start installation? [Y/n] " ans
   [[ "${ans,,}" == "n" ]] && die "Aborted by user."
   echo ""
@@ -211,11 +217,16 @@ fi
 [[ -s "$NVM_DIR/nvm.sh" ]] && . "$NVM_DIR/nvm.sh"
 
 log "  Installing Node LTS (downloads a binary, ~30s)..."
+set +u
 if ! nvm install --lts; then
-  warn "nvm install --lts failed, falling back to 'node' alias..."
-  nvm install node || die "Node install failed. Check network or run: nvm install --lts"
+  set -u
+  die "nvm install --lts failed. Check network or run: nvm install --lts"
 fi
-nvm use --lts >/dev/null 2>&1 || true
+if ! nvm use --lts >/dev/null 2>&1; then
+  set -u
+  die "nvm use --lts failed after install — node not activated."
+fi
+set -u
 
 # persist for future non-interactive shells
 grep -q 'NVM_DIR' "$HOME/.zshrc" || {

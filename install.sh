@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Oh My Zsh + Powerlevel10k Installer
+# Oh My Zsh + Powerlevel10k Setup Installer
 # Installs the exact dev setup from seanpham99's machine on a fresh Ubuntu box.
 #
-#   Mandatory (in order): Shell/OS → Core tooling (apt) → Runtimes → Docker
-#   Optional (end):       AI/dev agents (npm globals) via --with-ai-agents
+#   Mandatory: Shell/OS → Core tooling (apt) → Runtimes → configs
+#   Optional:  Docker, uv, AI/dev agents (npm globals)
+#
+# Usage:
+#   bash <(curl -fsSL https://raw.githubusercontent.com/seanpham99/dotfiles/main/install.sh)
+#   INTERACTIVE=0 bash install.sh                # non-interactive (flags only)
+#   bash install.sh --with-ai-agents --no-docker # scripted, no prompts
 # =============================================================================
 
 set -euo pipefail
@@ -34,20 +39,55 @@ echo ""
 
 REPO_RAW="https://raw.githubusercontent.com/seanpham99/dotfiles/main"
 
-# ── flags ────────────────────────────────────────────────────────────────────
+# ── options state ────────────────────────────────────────────────────────────
+INSTALL_DOCKER=1
+INSTALL_UV=1
 INSTALL_AI_AGENTS=0
+
+# ── flags (scripted runs) ────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --with-ai-agents) INSTALL_AI_AGENTS=1 ;;
+    --no-docker)      INSTALL_DOCKER=0 ;;
+    --no-uv)          INSTALL_UV=0 ;;
     --help|-h)
-      echo "Usage: install.sh [--with-ai-agents]"
-      echo "  --with-ai-agents  install AI/dev agents (npm globals: tokless, codegraph, opencode) at the end"
-      echo "  (Everything else is mandatory and always installed.)"
+      echo "Usage: install.sh [OPTIONS]"
+      echo "  --with-ai-agents  install AI/dev agents (tokless, codegraph, opencode)"
+      echo "  --no-docker       skip Docker Engine install"
+      echo "  --no-uv           skip uv/uvx install"
+      echo "  INTERACTIVE=0     skip the TUI, use flags/defaults"
       exit 0 ;;
     *) warn "Unknown flag: $1 (ignored)" ;;
   esac
   shift
 done
+
+# ── TUI: show the plan, let the user choose optional software ────────────────
+if [[ "${INTERACTIVE:-1}" == "1" ]] && [[ -t 0 ]]; then
+  echo -e "${BOLD}This installer will set up:${RESET}"
+  echo ""
+  echo -e "  ${CYAN}Mandatory:${RESET}"
+  echo "    [1] apt: zsh, git, curl, wget, unzip, fontconfig"
+  echo "    [2] MesloLGS Nerd Fonts (required by Powerlevel10k)"
+  echo "    [3] Oh My Zsh + Powerlevel10k theme + plugins"
+  echo "    [4] .zshrc / .p10k.zsh / .zsh_aliases (existing .zshrc backed up)"
+  echo "    [5] zsh as your default shell"
+  echo "    [6] Node.js LTS + npm via nvm"
+  echo "    [7] global secret-scan git hook"
+  echo ""
+  echo -e "  ${YELLOW}Optional:${RESET}"
+  echo "    [A] Docker Engine + compose plugin"
+  echo "    [B] uv/uvx (Python package manager, PEP 668)"
+  echo "    [C] AI/dev agents: tokless, codegraph, opencode (npm globals)"
+  echo ""
+  read -rp "    Install Docker? [Y/n] " ans;    [[ "${ans,,}" == "n" ]] && INSTALL_DOCKER=0 || INSTALL_DOCKER=1
+  read -rp "    Install uv/uvx? [Y/n] " ans;    [[ "${ans,,}" == "n" ]] && INSTALL_UV=0 || INSTALL_UV=1
+  read -rp "    Install AI/dev agents? [y/N] " ans; [[ "${ans,,}" == "y" ]] && INSTALL_AI_AGENTS=1 || INSTALL_AI_AGENTS=0
+  echo ""
+  read -rp "  Start installation? [Y/n] " ans
+  [[ "${ans,,}" == "n" ]] && die "Aborted by user."
+  echo ""
+fi
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  MANDATORY
@@ -149,7 +189,6 @@ fi
 ZSH_PATH="$(command -v zsh)"
 if [[ "$SHELL" != "$ZSH_PATH" ]]; then
   log "Setting zsh as default shell..."
-  # Add to /etc/shells if missing
   grep -qxF "$ZSH_PATH" /etc/shells || echo "$ZSH_PATH" | sudo tee -a /etc/shells > /dev/null
   chsh -s "$ZSH_PATH"
   ok "Default shell changed to zsh (takes effect on next login)."
@@ -157,16 +196,27 @@ else
   ok "zsh is already the default shell."
 fi
 
-# ── 10. Node.js via nvm (v24 LTS) + npm ──────────────────────────────────────
+# ── 10. Node.js via nvm (LTS) + npm ─────────────────────────────────────────
+# ponytail: explicit if/else instead of `set -e` + `> /dev/null` so an nvm
+# failure prints WHY and continues/aborts visibly instead of dying silently.
 log "Installing Node.js via nvm (LTS)..."
 export NVM_DIR="$HOME/.nvm"
 if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
-  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+  log "  Downloading nvm v0.40.1..."
+  if ! curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash; then
+    die "nvm install failed. Run manually:  curl -fsSL https://nvm.sh | bash"
+  fi
 fi
 # shellcheck disable=SC1091
 [[ -s "$NVM_DIR/nvm.sh" ]] && . "$NVM_DIR/nvm.sh"
-nvm install --lts >/dev/null 2>&1 || nvm install node >/dev/null 2>&1
+
+log "  Installing Node LTS (downloads a binary, ~30s)..."
+if ! nvm install --lts; then
+  warn "nvm install --lts failed, falling back to 'node' alias..."
+  nvm install node || die "Node install failed. Check network or run: nvm install --lts"
+fi
 nvm use --lts >/dev/null 2>&1 || true
+
 # persist for future non-interactive shells
 grep -q 'NVM_DIR' "$HOME/.zshrc" || {
   cat >> "$HOME/.zshrc" <<'NVMEOF'
@@ -178,17 +228,25 @@ NVMEOF
 }
 ok "Node $(node --version 2>/dev/null || echo '?') + npm $(npm --version 2>/dev/null || echo '?') via nvm."
 
+# ═══════════════════════════════════════════════════════════════════════════
+#  OPTIONAL
+# ═══════════════════════════════════════════════════════════════════════════
+
 # ── 11. uv/uvx (Python — PEP 668) ────────────────────────────────────────────
-log "Installing uv/uvx (Python package manager, PEP 668)..."
-if command -v uv >/dev/null 2>&1; then
-  ok "uv already installed: $(uv --version)"
-else
-  if curl -fsSL https://astral.sh/uv/install.sh | bash >/dev/null 2>&1; then
-    export PATH="$HOME/.local/bin:$PATH"
-    ok "uv installed: $(uv --version 2>/dev/null || echo '?')"
+if [[ "$INSTALL_UV" -eq 1 ]]; then
+  log "Installing uv/uvx (Python package manager, PEP 668)..."
+  if command -v uv >/dev/null 2>&1; then
+    ok "uv already installed: $(uv --version)"
   else
-    warn "uv install failed — continuing (run astral.sh/uv/install.sh manually)."
+    if curl -fsSL https://astral.sh/uv/install.sh | bash >/dev/null 2>&1; then
+      export PATH="$HOME/.local/bin:$PATH"
+      ok "uv installed: $(uv --version 2>/dev/null || echo '?')"
+    else
+      warn "uv install failed — continuing (run astral.sh/uv/install.sh manually)."
+    fi
   fi
+else
+  log "Skipping uv/uvx."
 fi
 
 # ── 12. Install global secret-scan git hook ──────────────────────────────────
@@ -201,31 +259,30 @@ else
   warn "Could not fetch install-git-hooks.sh — skipping global hook (not fatal)."
 fi
 
-# ── 13. Install Docker Engine + compose (required) ───────────────────────────
-log "Installing Docker Engine + compose plugin..."
-if command -v docker >/dev/null 2>&1; then
-  ok "Docker already installed: $(docker --version)"
-else
-  if curl -fsSL https://get.docker.com | sudo bash 2>&1 | tail -3; then
-    sudo usermod -aG docker "$USER"
-    ok "Docker installed. Re-login for group permissions."
+# ── 13. Docker Engine + compose (optional) ───────────────────────────────────
+if [[ "$INSTALL_DOCKER" -eq 1 ]]; then
+  log "Installing Docker Engine + compose plugin..."
+  if command -v docker >/dev/null 2>&1; then
+    ok "Docker already installed: $(docker --version)"
   else
-    warn "Docker install failed — continuing (run get.docker.com manually)."
+    if curl -fsSL https://get.docker.com | sudo bash 2>&1 | tail -3; then
+      sudo usermod -aG docker "$USER"
+      ok "Docker installed. Re-login for group permissions."
+    else
+      warn "Docker install failed — continuing (run get.docker.com manually)."
+    fi
   fi
+else
+  log "Skipping Docker."
 fi
 
-# ═══════════════════════════════════════════════════════════════════════════
-#  OPTIONAL
-# ═══════════════════════════════════════════════════════════════════════════
-
-# ── 14. AI/dev agents (npm globals) ──────────────────────────────────────────
-if [[ "$INSTALL_AI_AGENTS" == "1" ]]; then
+# ── 14. AI/dev agents (npm globals, optional) ────────────────────────────────
+if [[ "$INSTALL_AI_AGENTS" -eq 1 ]]; then
   log "Installing AI/dev agents (npm globals)..."
   export NVM_DIR="$HOME/.nvm"
   [[ -s "$NVM_DIR/nvm.sh" ]] && . "$NVM_DIR/nvm.sh"
   command -v npm >/dev/null 2>&1 || die "npm not found — Node install failed earlier."
 
-  # tokless (token-saving toolkit: rtk, codegraph wiring)
   log "  → tokless"
   if curl -fsSL "https://raw.githubusercontent.com/HoangP8/tokless/main/scripts/install.sh" | bash 2>&1 | tail -2; then
     ok "  tokless installed."
@@ -233,7 +290,6 @@ if [[ "$INSTALL_AI_AGENTS" == "1" ]]; then
     warn "  tokless install failed — continuing."
   fi
 
-  # codegraph (repo indexing)
   log "  → codegraph"
   if npm install -g @colbymchenry/codegraph >/dev/null 2>&1; then
     ok "  codegraph installed."
@@ -241,7 +297,6 @@ if [[ "$INSTALL_AI_AGENTS" == "1" ]]; then
     warn "  codegraph install failed — continuing."
   fi
 
-  # opencode CLI
   log "  → opencode"
   if curl -fsSL https://opencode.ai/install | bash >/dev/null 2>&1; then
     ok "  opencode installed."
@@ -249,7 +304,7 @@ if [[ "$INSTALL_AI_AGENTS" == "1" ]]; then
     warn "  opencode install failed — continuing."
   fi
 else
-  log "Skipping AI/dev agents (use --with-ai-agents to install)."
+  log "Skipping AI/dev agents (toggle C in the TUI, or --with-ai-agents)."
 fi
 
 # ── Done ─────────────────────────────────────────────────────────────────────

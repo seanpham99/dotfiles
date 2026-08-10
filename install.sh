@@ -145,6 +145,14 @@ else
   warn "Could not fetch install-git-hooks.sh — skipping global hook (not fatal)."
 fi
 
+# ── 11. Install tokless (token-saving toolkit: rtk, codegraph, context-mode) ─
+log "Installing tokless (token-saving CLI for AI coding agents)..."
+if curl -fsSL "https://raw.githubusercontent.com/HoangP8/tokless/main/scripts/install.sh" | bash 2>&1 | tail -3; then
+  ok "tokless installed. Run 'tokless' to wire agents + tools."
+else
+  warn "tokless install failed — skipping (not fatal)."
+fi
+
 # ── Done ─────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${GREEN}${BOLD}══════════════════════════════════════════════${RESET}"

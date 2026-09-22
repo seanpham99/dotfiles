@@ -1,0 +1,51 @@
+# =============================================================================
+# .zshrc.macos — lightweight Oh My Zsh config for macOS
+# Target: ~200ms interactive startup. No Powerlevel10k, no eager nvm.
+# =============================================================================
+
+# --- oh-my-zsh ---
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME="robbyrussell"          # lightest built-in theme; no Nerd Font needed
+plugins=(
+  git
+  macos                         # built-in: ofd, tab, pfs, quick-look etc. ~free
+  zsh-autosuggestions
+  zsh-syntax-highlighting       # MUST stay last in the list
+)
+zstyle ':omz:update' mode disabled
+source "$ZSH/oh-my-zsh.sh"
+
+# --- environment ---
+export PATH="$HOME/.local/bin:$PATH"
+setopt interactivecomments
+
+# autosuggest highlight
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#663399,standout"
+
+# --- nvm: lazy-load (~300-600ms saved per shell) ---
+# First call to nvm/node/npm/npx sources nvm.sh, then forwards.
+export NVM_DIR="$HOME/.nvm"
+nvm() {
+  unset -f nvm node npm npx 2>/dev/null
+  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+  nvm "$@"
+}
+node() { nvm >/dev/null; node "$@"; }
+npm()  { nvm >/dev/null; npm "$@"; }
+npx()  { nvm >/dev/null; npx "$@"; }
+
+# --- globalias: space expands global aliases ---
+globalias() {
+  if [[ $LBUFFER =~ '[a-zA-Z0-9]+$' ]]; then
+    zle _expand_alias
+    zle expand-word
+  fi
+  zle self-insert
+}
+zle -N globalias
+bindkey " " globalias
+bindkey "^[[Z" magic-space
+bindkey -M isearch " " magic-space
+
+# --- user aliases (optional file) ---
+[[ -f ~/.zsh_aliases ]] && . ~/.zsh_aliases

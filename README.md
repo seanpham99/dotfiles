@@ -44,3 +44,31 @@ bash <(curl -fsSL https://raw.githubusercontent.com/seanpham99/dotfiles/main/ins
 | `.p10k.zsh` | Powerlevel10k prompt config |
 | `update.sh` | Pull latest configs & plugin updates |
 | `scripts/install-git-hooks.sh` | Global secret-scan hook installer |
+
+## macOS (lightweight variant)
+
+A slimmed-down setup for macOS — no Powerlevel10k, no Nerd Font, lazy-loaded
+nvm. Target: **~200ms** interactive startup.
+
+| Difference | Why |
+|---|---|
+| `robbyrussell` theme | No Nerd Font dependency, no instant-prompt hack |
+| Lazy `nvm` | `nvm`/`node`/`npm`/`npx` load nvm on first call — saves ~300–600ms per shell |
+| `macos` OMZ plugin | Built-in helpers (`ofd`, `tab`, `pfs`, `quick-look`) at ~zero cost |
+| OMZ auto-update disabled | No update-check delay on shell start |
+
+**Package manager:** prefers Homebrew when present; falls back to macOS system
+tools + official curl installers (uv, Docker DMG) when brew is unavailable or
+admin rights are missing.
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/seanpham99/dotfiles/main/install-macos.sh)
+```
+
+Flags: `--with-docker` (Docker Desktop, opt-in), `--with-ai-agents`, `--no-uv`,
+`INTERACTIVE=0` for scripted runs.
+
+| File | Purpose |
+|---|---|
+| `install-macos.sh` | macOS installer (brew optional) |
+| `.zshrc.macos` | Lightweight zsh config |

@@ -3,7 +3,8 @@
 # Oh My Zsh (lightweight) Setup Installer — macOS
 # Installs the optimized zsh setup: robbyrussell theme, lazy nvm, no p10k.
 #
-#   Mandatory: Homebrew → Oh My Zsh → plugins → .zshrc → nvm (lazy)
+#   Mandatory: core tooling (brew if present, else system) → Oh My Zsh →
+#              plugins → .zshrc → nvm (lazy)
 #   Optional:  uv, Docker Desktop, AI/dev agents (npm globals)
 #
 # Usage:
@@ -64,8 +65,7 @@ done
 if [[ "${INTERACTIVE:-1}" == "1" ]] && [[ -t 0 ]]; then
   echo -e "${BOLD}This installer will set up:${RESET}"
   echo ""
-  echo -e "  ${CYAN}Mandatory:${RESET}"
-  echo "    [1] Homebrew (if missing) + git, curl"
+  echo "    [1] Core tooling: git, curl (via brew if available, else macOS system tools)"
   echo "    [2] Oh My Zsh + zsh-autosuggestions + zsh-syntax-highlighting"
   echo "    [3] .zshrc.macos → ~/.zshrc (existing .zshrc backed up)"
   echo "    [4] zsh as your default shell (macOS default already)"
@@ -90,23 +90,33 @@ fi
 #  MANDATORY
 # ═══════════════════════════════════════════════════════════════════════════
 
-# ── 1. Homebrew + core tooling ──────────────────────────────────────────────
+# ── 1. Core tooling ─────────────────────────────────────────────────────────
+# Prefer Homebrew when present; fall back to macOS system tools (git/curl/zsh
+# ship with macOS + Command Line Tools) when brew is unavailable or can't be
+# installed (e.g. no admin rights).
+HAVE_BREW=0
 if command -v brew >/dev/null 2>&1; then
-  ok "Homebrew already installed: $(brew --version | head -1)"
-else
-  log "Installing Homebrew..."
+  HAVE_BREW=1
+  ok "Homebrew found: $(brew --version | head -1)"
+elif sudo -n true 2>/dev/null; then
+  log "Installing Homebrew (passwordless sudo available)..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   # Apple Silicon brew lives in /opt/homebrew; Intel in /usr/local
   if [[ -x /opt/homebrew/bin/brew ]]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
   fi
-  ok "Homebrew installed."
+  command -v brew >/dev/null 2>&1 && HAVE_BREW=1
+else
+  warn "Homebrew not installed and no admin rights — using macOS system tools."
 fi
 
-log "Ensuring git and curl via brew..."
-brew list git  >/dev/null 2>&1 || brew install git
-# curl/zsh ship with macOS — no brew needed for them
-ok "Core tooling ready."
+if [[ "$HAVE_BREW" -eq 1 ]]; then
+  brew list git >/dev/null 2>&1 || brew install git
+else
+  command -v git  >/dev/null 2>&1 || die "git not found. Install Command Line Tools: xcode-select --install"
+  command -v curl >/dev/null 2>&1 || die "curl not found (ships with macOS — something is wrong)."
+fi
+ok "Core tooling ready (brew=$HAVE_BREW)."
 
 # ── 2. Oh My Zsh ─────────────────────────────────────────────────────────────
 if [[ -d "$HOME/.oh-my-zsh" ]]; then
@@ -210,9 +220,17 @@ if [[ "$INSTALL_UV" -eq 1 ]]; then
   log "Installing uv/uvx..."
   if command -v uv >/dev/null 2>&1; then
     ok "uv already installed: $(uv --version)"
-  else
+  elif [[ "$HAVE_BREW" -eq 1 ]]; then
     brew install uv && ok "uv installed: $(uv --version)" \
       || warn "uv install failed — continuing (brew install uv manually)."
+  else
+    # no brew: official installer drops uv/uvx into ~/.local/bin (no admin needed)
+    if curl -fsSL https://astral.sh/uv/install.sh | bash >/dev/null 2>&1; then
+      export PATH="$HOME/.local/bin:$PATH"
+      ok "uv installed: $(uv --version 2>/dev/null || echo '?')"
+    else
+      warn "uv install failed — continuing (run astral.sh/uv/install.sh manually)."
+    fi
   fi
 else
   log "Skipping uv/uvx."
@@ -220,13 +238,30 @@ fi
 
 # ── 11. Docker Desktop (optional, heavy) ─────────────────────────────────────
 if [[ "$INSTALL_DOCKER" -eq 1 ]]; then
-  log "Installing Docker Desktop (cask)..."
+  log "Installing Docker Desktop..."
   if command -v docker >/dev/null 2>&1 || [[ -d /Applications/Docker.app ]]; then
     ok "Docker already installed."
-  else
+  elif [[ "$HAVE_BREW" -eq 1 ]]; then
     brew install --cask docker \
       && ok "Docker Desktop installed. Launch it once from /Applications." \
       || warn "Docker install failed — continuing (brew install --cask docker)."
+  else
+    # no brew: download the official DMG and install to /Applications
+    # (requires admin rights for /Applications; warns and skips otherwise)
+    ARCH="$(uname -m)"; [[ "$ARCH" == "arm64" ]] && DMG_ARCH=arm64 || DMG_ARCH=intel
+    DMG_URL="https://desktop.docker.com/mac/main/${DMG_ARCH}/Docker.dmg"
+    log "  Downloading Docker Desktop DMG (${DMG_ARCH})..."
+    if curl -fsSL "$DMG_URL" -o /tmp/Docker.dmg \
+      && hdiutil attach -nobrowse -quiet /tmp/Docker.dmg \
+      && cp -R "/Volumes/Docker/Docker.app" /Applications/ 2>/dev/null; then
+      hdiutil detach -quiet "/Volumes/Docker" 2>/dev/null || true
+      rm -f /tmp/Docker.dmg
+      ok "Docker Desktop installed. Launch it once from /Applications."
+    else
+      hdiutil detach -quiet "/Volumes/Docker" 2>/dev/null || true
+      rm -f /tmp/Docker.dmg
+      warn "Docker install failed (needs admin rights for /Applications) — download manually from docker.com."
+    fi
   fi
 else
   log "Skipping Docker Desktop."

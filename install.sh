@@ -70,7 +70,7 @@ if [[ "${INTERACTIVE:-1}" == "1" ]] && [[ -t 0 ]]; then
   echo "    [1] apt: zsh, git, curl, wget, zip, unzip, fontconfig"
   echo "    [2] MesloLGS Nerd Fonts (required by Powerlevel10k)"
   echo "    [3] Oh My Zsh + Powerlevel10k theme + plugins"
-  echo "    [4] .zshrc / .p10k.zsh / .zsh_aliases (existing .zshrc backed up)"
+  echo "    [4] .zshenv / .zshrc / .p10k.zsh / .zsh_aliases (existing .zshrc backed up)"
   echo "    [5] zsh as your default shell"
   echo "    [6] Node.js LTS + npm via nvm"
   echo "    [7] global secret-scan git hook"
@@ -171,7 +171,11 @@ else
 fi
 ok "zsh-syntax-highlighting ready."
 
-# ── 7. Drop configs (.zshrc & .p10k.zsh) ────────────────────────────────────
+# ── 7. Drop configs (.zshenv, .zshrc & .p10k.zsh) ──────────────────────────
+log "Fetching .zshenv from repo..."
+curl -fsSL "${REPO_RAW}/.zshenv" -o "$HOME/.zshenv"
+ok ".zshenv installed."
+
 log "Fetching .zshrc from repo..."
 ZSHRC_BACKUP="$HOME/.zshrc.backup.$(date +%Y%m%d_%H%M%S)"
 if [[ -f "$HOME/.zshrc" ]]; then

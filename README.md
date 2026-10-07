@@ -40,6 +40,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/seanpham99/dotfiles/main/ins
 | File | Purpose |
 |---|---|
 | `install.sh` | One-shot installer script |
+| `.zshenv` | Early zsh environment (bypasses Ubuntu redundant compinit) |
 | `.zshrc` | Main zsh config |
 | `.p10k.zsh` | Powerlevel10k prompt config |
 | `update.sh` | Pull latest configs & plugin updates |

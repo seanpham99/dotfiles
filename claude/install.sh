@@ -51,7 +51,7 @@ backup() {
 }
 
 # ── 1. CLAUDE.md + agents ───────────────────────────────────────────────────
-for f in CLAUDE.md agents/*.md; do
+for f in CLAUDE.md $(cd "$SRC" && ls agents/*.md); do
   [[ -e "$SRC/$f" ]] || continue
   backup "$CLAUDE/$f"
   install -m 644 "$SRC/$f" "$CLAUDE/$f"

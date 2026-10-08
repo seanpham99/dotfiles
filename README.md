@@ -18,6 +18,7 @@ one-command installer for fresh Ubuntu machines.
 | **uv/uvx** | Python package manager (PEP 668) — optional, default on |
 | **Docker Engine + compose** | optional, default on |
 | **AI/dev agents** | tokless, codegraph, opencode (npm globals) — optional, default off |
+| **Claude Code + config** | Claude Code, agentmemory hooks, and the `claude/` config below — optional, default off (`--with-claude`) |
 
 > **Ubuntu only.** Do **not** run as root.
 >
@@ -45,6 +46,24 @@ bash <(curl -fsSL https://raw.githubusercontent.com/seanpham99/dotfiles/main/ins
 | `.p10k.zsh` | Powerlevel10k prompt config |
 | `update.sh` | Pull latest configs & plugin updates |
 | `scripts/install-git-hooks.sh` | Global secret-scan hook installer |
+| `claude/install.sh` | Claude Code config installer (runs standalone too) |
+| `claude/CLAUDE.md` | Global agent instructions → `~/.claude/CLAUDE.md` |
+| `claude/settings.json` | Global settings → `~/.claude/settings.json` (placeholders filled at install) |
+| `claude/agents/` | Global subagents → `~/.claude/agents/` |
+
+## Claude Code config
+
+Model roles: `opusplan` main (Opus plans, Sonnet executes), Opus advisor, Sonnet subagents, Haiku `Explore`.
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/seanpham99/dotfiles/main/claude/install.sh)
+AGENTMEMORY_URL=http://<host>:3111 bash claude/install.sh   # point at your agentmemory server
+```
+
+- Existing files are backed up to `~/.claude/backups/dotfiles-<timestamp>/`.
+- `settings.json` holds no secrets: export `AGENTMEMORY_SECRET` in your shell. `__AGENTMEMORY_PLUGIN_DIR__` and `__AGENTMEMORY_URL__` are filled at install (default URL `http://localhost:3111`).
+- Skills live in `~/.agents/skills/` (managed by `npx skills`); the installer symlinks each into `~/.claude/skills/`. Skill contents are not in this repo.
+- To capture changes from a live machine, copy `~/.claude/{CLAUDE.md,agents/*}` back here and re-template `settings.json`.
 
 ## macOS (lightweight variant)
 

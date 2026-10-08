@@ -43,16 +43,19 @@ REPO_RAW="https://raw.githubusercontent.com/seanpham99/dotfiles/main"
 INSTALL_DOCKER=1
 INSTALL_UV=1
 INSTALL_AI_AGENTS=0
+INSTALL_CLAUDE=0
 
 # ── flags (scripted runs) ────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --with-ai-agents) INSTALL_AI_AGENTS=1 ;;
+    --with-claude)    INSTALL_CLAUDE=1 ;;
     --no-docker)      INSTALL_DOCKER=0 ;;
     --no-uv)          INSTALL_UV=0 ;;
     --help|-h)
       echo "Usage: install.sh [OPTIONS]"
       echo "  --with-ai-agents  install AI/dev agents (tokless, codegraph, opencode)"
+      echo "  --with-claude     install Claude Code + global config (claude/)"
       echo "  --no-docker       skip Docker Engine install"
       echo "  --no-uv           skip uv/uvx install"
       echo "  INTERACTIVE=0     skip the TUI, use flags/defaults"
@@ -79,17 +82,19 @@ if [[ "${INTERACTIVE:-1}" == "1" ]] && [[ -t 0 ]]; then
   echo "    [A] Docker Engine + compose plugin"
   echo "    [B] uv/uvx (Python package manager, PEP 668)"
   echo "    [C] AI/dev agents: tokless, codegraph, opencode (npm globals)"
+  echo "    [D] Claude Code + global config (CLAUDE.md, settings, agents, skills links)"
   echo ""
   echo -e "  ${BOLD}Selected options:${RESET}"
   echo "    Core (1-7) always installed"
-  echo "    Docker: ${INSTALL_DOCKER}  uv: ${INSTALL_UV}  AI agents: ${INSTALL_AI_AGENTS}"
+  echo "    Docker: ${INSTALL_DOCKER}  uv: ${INSTALL_UV}  AI agents: ${INSTALL_AI_AGENTS}  Claude: ${INSTALL_CLAUDE}"
   echo ""
   read -rp "    Install Docker? [Y/n] " ans;    [[ "${ans,,}" == "n" ]] && INSTALL_DOCKER=0 || INSTALL_DOCKER=1
   read -rp "    Install uv/uvx? [Y/n] " ans;    [[ "${ans,,}" == "n" ]] && INSTALL_UV=0 || INSTALL_UV=1
   read -rp "    Install AI/dev agents? [y/N] " ans; [[ "${ans,,}" == "y" ]] && INSTALL_AI_AGENTS=1 || INSTALL_AI_AGENTS=0
+  read -rp "    Install Claude Code + config? [y/N] " ans; [[ "${ans,,}" == "y" ]] && INSTALL_CLAUDE=1 || INSTALL_CLAUDE=0
   echo ""
   echo -e "  ${BOLD}Will install:${RESET}"
-  echo "    Core + Docker=$INSTALL_DOCKER uv=$INSTALL_UV AI=$INSTALL_AI_AGENTS"
+  echo "    Core + Docker=$INSTALL_DOCKER uv=$INSTALL_UV AI=$INSTALL_AI_AGENTS Claude=$INSTALL_CLAUDE"
   read -rp "  Start installation? [Y/n] " ans
   [[ "${ans,,}" == "n" ]] && die "Aborted by user."
   echo ""
@@ -100,9 +105,9 @@ fi
 # ═══════════════════════════════════════════════════════════════════════════
 
 # ── 1. Core tooling (apt) ───────────────────────────────────────────────────
-log "Updating apt & installing zsh, git, curl, wget, zip, unzip, fontconfig..."
+log "Updating apt & installing zsh, git, curl, wget, zip, unzip, fontconfig, jq..."
 sudo apt-get update -qq
-sudo apt-get install -y -qq zsh git curl wget zip unzip fontconfig
+sudo apt-get install -y -qq zsh git curl wget zip unzip fontconfig jq
 ok "Core tooling installed."
 
 # ── 2. Nerd Font (MesloLGS NF – required by Powerlevel10k) ──────────────────
@@ -320,6 +325,30 @@ if [[ "$INSTALL_AI_AGENTS" -eq 1 ]]; then
   fi
 else
   log "Skipping AI/dev agents (toggle C in the TUI, or --with-ai-agents)."
+fi
+
+# ── 15. Claude Code + global config (optional) ────────────────────────────────
+if [[ "$INSTALL_CLAUDE" -eq 1 ]]; then
+  log "Installing Claude Code + global config..."
+  export NVM_DIR="$HOME/.nvm"
+  [[ -s "$NVM_DIR/nvm.sh" ]] && . "$NVM_DIR/nvm.sh"
+  if command -v claude >/dev/null 2>&1; then
+    ok "  Claude Code already installed: $(claude --version 2>/dev/null)"
+  elif curl -fsSL https://claude.ai/install.sh | bash >/dev/null 2>&1; then
+    ok "  Claude Code installed."
+  else
+    warn "  Claude Code install failed — continuing (run: curl -fsSL https://claude.ai/install.sh | bash)."
+  fi
+  if npm install -g @agentmemory/agentmemory >/dev/null 2>&1; then
+    ok "  agentmemory plugin installed (hooks)."
+  else
+    warn "  agentmemory install failed — its hooks will error until: npm i -g @agentmemory/agentmemory"
+  fi
+  if ! bash <(curl -fsSL "${REPO_RAW}/claude/install.sh"); then
+    warn "  Claude config install failed — continuing (run claude/install.sh manually)."
+  fi
+else
+  log "Skipping Claude Code (toggle D in the TUI, or --with-claude)."
 fi
 
 # ── Done ─────────────────────────────────────────────────────────────────────

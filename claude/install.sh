@@ -56,6 +56,9 @@ for f in CLAUDE.md agents/*.md; do
   backup "$CLAUDE/$f"
   install -m 644 "$SRC/$f" "$CLAUDE/$f"
 done
+# codebase-discoverer is folded into Explore (Bash + output rules)
+backup "$CLAUDE/agents/codebase-discoverer.md"
+rm -f "$CLAUDE/agents/codebase-discoverer.md"
 ok "CLAUDE.md and agents installed."
 
 # ── 2. settings.json (fill machine-specific placeholders) ───────────────────

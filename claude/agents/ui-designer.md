@@ -20,6 +20,7 @@ Before designing anything, find and read what the repo already decided: `DESIGN.
 | Task | Load |
 |---|---|
 | Product UI: dashboards, data-dense screens, forms, settings, app shells | `ui-ux-pro-max` for palette, type pairing, UX guideline and stack lookups |
+| Charts, plots, stat tiles, KPI rows, dashboard data displays, chart colors | `dataviz` |
 | Landing page, portfolio, marketing site, or "make it look less templated" | `design-taste-frontend`, then `frontend-design` |
 | New look or a bold reshape of an existing screen | `frontend-design`; `popular-web-designs` for real reference systems |
 | Design tokens or a `DESIGN.md` spec | `design-md` |

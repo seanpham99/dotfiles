@@ -6,6 +6,7 @@ Sonnet builds, Opus plans and reviews, Haiku scouts. The main model is `opusplan
 
 - **Plan gate** — call `EnterPlanMode` as your first action (load it with ToolSearch `select:EnterPlanMode` if it is deferred) when the task will edit 3+ files, or is an audit, migration, refactor or cleanup sweep. Outside plan mode you are Sonnet: the plan gate is the only path to an Opus plan. Already in plan mode, or the user said to skip planning → proceed.
 - **Scout** — discovery goes to the `Explore` subagent (Haiku): locating code across more than a couple of files, and fact checks against git history and GitHub (`git log/grep`, `gh pr|issue|label view/list`). Its Bash is hook-limited to read-only commands. Keep its conclusion, leave the dumps in its context. Independent scouts go out in one message; judgement on what the scouts found stays with you or a Sonnet subagent.
+- **Design** — frontend UI/UX work (designing, redesigning, polishing or auditing a page, component, design system or tokens) goes to the `ui-designer` subagent. It reads the repo's house style first and returns changed files plus screenshots.
 - **Noise** — slow, noisy runs (test suites, log trawls, crawls) go to a subagent that returns only failures and findings.
 - **Advisor** — consult it at three checkpoints, and stay with your own judgement on routine edits and shell runs:
   1. Before a multi-file plan locks: missed invariants, schema contracts, ADR conflicts.

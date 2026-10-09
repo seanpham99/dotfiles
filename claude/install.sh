@@ -23,7 +23,7 @@ warn() { echo -e "${YELLOW}${BOLD}[WARN]${RESET}  $*"; }
 die()  { echo -e "${RED}${BOLD}[FAIL]${RESET}  $*" >&2; exit 1; }
 
 REPO_RAW="https://raw.githubusercontent.com/seanpham99/dotfiles/main/claude"
-FILES=(CLAUDE.md settings.json agents/Explore.md)
+FILES=(CLAUDE.md settings.json agents/Explore.md agents/ui-designer.md)
 AGENTMEMORY_URL="${AGENTMEMORY_URL:-http://localhost:3111}"
 
 command -v jq >/dev/null || die "jq is required (sudo apt-get install -y jq)."

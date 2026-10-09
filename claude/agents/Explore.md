@@ -8,7 +8,7 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: "$HOME/.claude/hooks/explore-readonly.sh"
+          command: "$HOME/.agents/hooks/readonly-shell.sh"
 ---
 
 You locate and check facts; you do not review, audit, fix or edit.

@@ -23,7 +23,7 @@ warn() { echo -e "${YELLOW}${BOLD}[WARN]${RESET}  $*"; }
 die()  { echo -e "${RED}${BOLD}[FAIL]${RESET}  $*" >&2; exit 1; }
 
 REPO_RAW="https://raw.githubusercontent.com/seanpham99/dotfiles/main/claude"
-FILES=(CLAUDE.md settings.json agents/Explore.md)
+FILES=(CLAUDE.md settings.json agents/Explore.md hooks/explore-readonly.sh)
 AGENTMEMORY_URL="${AGENTMEMORY_URL:-http://localhost:3111}"
 
 command -v jq >/dev/null || die "jq is required (sudo apt-get install -y jq)."
@@ -59,7 +59,12 @@ done
 # codebase-discoverer is folded into Explore (Bash + output rules)
 backup "$CLAUDE/agents/codebase-discoverer.md"
 rm -f "$CLAUDE/agents/codebase-discoverer.md"
-ok "CLAUDE.md and agents installed."
+mkdir -p "$CLAUDE/hooks"
+for f in $(cd "$SRC" && ls hooks/*.sh 2>/dev/null); do
+  backup "$CLAUDE/$f"
+  install -m 755 "$SRC/$f" "$CLAUDE/$f"
+done
+ok "CLAUDE.md, agents and hooks installed."
 
 # ── 2. settings.json (fill machine-specific placeholders) ───────────────────
 PLUGIN_DIR=""

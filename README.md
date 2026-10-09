@@ -50,6 +50,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/seanpham99/dotfiles/main/ins
 | `claude/CLAUDE.md` | Global agent instructions → `~/.claude/CLAUDE.md` |
 | `claude/settings.json` | Global settings → `~/.claude/settings.json` (placeholders filled at install) |
 | `claude/agents/` | Global subagents → `~/.claude/agents/` |
+| `claude/hooks/` | Global hook scripts → `~/.claude/hooks/` (`explore-readonly.sh` limits Explore's Bash to read-only commands) |
 
 ## Claude Code config
 

@@ -23,7 +23,7 @@ warn() { echo -e "${YELLOW}${BOLD}[WARN]${RESET}  $*"; }
 die()  { echo -e "${RED}${BOLD}[FAIL]${RESET}  $*" >&2; exit 1; }
 
 REPO_RAW="https://raw.githubusercontent.com/seanpham99/dotfiles/main/claude"
-FILES=(CLAUDE.md settings.json agents/Explore.md hooks/explore-readonly.sh)
+FILES=(CLAUDE.md settings.json agents/Explore.md)
 AGENTMEMORY_URL="${AGENTMEMORY_URL:-http://localhost:3111}"
 
 command -v jq >/dev/null || die "jq is required (sudo apt-get install -y jq)."
@@ -37,6 +37,13 @@ if [[ -z "$SRC" || ! -f "$SRC/settings.json" ]]; then
     mkdir -p "$SRC/$(dirname "$f")"
     curl -fsSL "$REPO_RAW/$f" -o "$SRC/$f"
   done
+fi
+
+# ── 0. shared ~/.agents layer (hooks Explore runs) ──────────────────────────
+if [[ -f "$SRC/../agents/install.sh" ]]; then
+  bash "$SRC/../agents/install.sh"
+else
+  bash <(curl -fsSL "${REPO_RAW%/claude}/agents/install.sh")
 fi
 
 CLAUDE="$HOME/.claude"
@@ -59,12 +66,11 @@ done
 # codebase-discoverer is folded into Explore (Bash + output rules)
 backup "$CLAUDE/agents/codebase-discoverer.md"
 rm -f "$CLAUDE/agents/codebase-discoverer.md"
-mkdir -p "$CLAUDE/hooks"
-for f in $(cd "$SRC" && ls hooks/*.sh 2>/dev/null); do
-  backup "$CLAUDE/$f"
-  install -m 755 "$SRC/$f" "$CLAUDE/$f"
-done
-ok "CLAUDE.md, agents and hooks installed."
+# explore-readonly.sh moved to the shared ~/.agents/hooks/readonly-shell.sh
+backup "$CLAUDE/hooks/explore-readonly.sh"
+rm -f "$CLAUDE/hooks/explore-readonly.sh"
+rmdir "$CLAUDE/hooks" 2>/dev/null || true
+ok "CLAUDE.md and agents installed."
 
 # ── 2. settings.json (fill machine-specific placeholders) ───────────────────
 PLUGIN_DIR=""

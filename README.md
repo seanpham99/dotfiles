@@ -50,7 +50,11 @@ bash <(curl -fsSL https://raw.githubusercontent.com/seanpham99/dotfiles/main/ins
 | `claude/CLAUDE.md` | Global agent instructions → `~/.claude/CLAUDE.md` |
 | `claude/settings.json` | Global settings → `~/.claude/settings.json` (placeholders filled at install) |
 | `claude/agents/` | Global subagents → `~/.claude/agents/` |
-| `claude/hooks/` | Global hook scripts → `~/.claude/hooks/` (`explore-readonly.sh` limits Explore's Bash to read-only commands) |
+| `agents/install.sh` | Vendor-neutral agent layer → `~/.agents/` (any harness can use it) |
+| `agents/hooks/readonly-shell.sh` | Read-only Bash allowlist for scout agents (Claude `Explore`, omp `scout`) |
+| `omp/install.sh` | omp (oh-my-pi) installer: shared layer + the files below → `~/.omp/agent/` |
+| `omp/extensions/repo-guards.ts` | Runs repo guard hooks (`.agents/hooks/guard.sh`, legacy `.claude/hooks/guard.sh`) and the read-only hook for `scout` |
+| `omp/agents/` | `scout` (read-only Bash) and `advisor` (on the `@advisor` role) overrides |
 
 ## Claude Code config
 

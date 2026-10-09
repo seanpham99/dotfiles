@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# PreToolUse hook for the Explore subagent: Bash is allowed only for read-only
+# PreToolUse hook for read-only scout agents (Explore, scout): Bash is allowed only for read-only
 # inspection (git history, GitHub state, text search). Allowlist, not denylist:
 # every segment of a compound command must match, or the call is blocked (exit 2).
 cmd=$(jq -r '.tool_input.command // empty')
-deny() { echo "BLOCKED (Explore is read-only): $1. Allowed: git log/show/diff/grep/status/blame/ls-files/rev-parse/rev-list/merge-base, gh pr|issue|label|run|release|repo view/list/diff/checks/status, gh api (GET), rg/grep/ls/cat/head/tail/wc/find/jq/sort/uniq/cut/tr/stat/du/tree." >&2; exit 2; }
+deny() { echo "BLOCKED (read-only agent): $1. Allowed: git log/show/diff/grep/status/blame/ls-files/rev-parse/rev-list/merge-base, gh pr|issue|label|run|release|repo view/list/diff/checks/status, gh api (GET), rg/grep/ls/cat/head/tail/wc/find/jq/sort/uniq/cut/tr/stat/du/tree." >&2; exit 2; }
 
 # Substitution runs even inside double quotes, so check the raw command for it.
 [[ $cmd == *'$('* || $cmd == *'`'* || $cmd == *'<('* ]] && deny "command substitution"
